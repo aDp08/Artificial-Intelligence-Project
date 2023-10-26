@@ -1,0 +1,135 @@
+import cv2 as c
+import datetime as dt
+from openpyxl import Workbook
+import face_recognition as fr
+w=Workbook()
+# x=c.imread("C:\\Users\\Dell\\OneDrive\\Desktop\\website\\1.py\\aditya.jpg")
+# rgb1=c.cvtColor(x,c.COLOR_BGR2RGB)
+# p1
+# en1=fr.face_encodings(rgb1)
+
+
+fp=c.imread("aditya.jpg")
+import dlib as d
+import numpy as np
+from imutils import face_utils as f
+s=w.active
+
+
+i=c.VideoCapture(0)
+detect=d.get_frontal_face_detector()
+path="C:\\Users\\Dell\\OneDrive\\Desktop\\website\\1.py\\shape_predictor_68_face_landmarks.dat\\shape_predictor_68_face_landmarks.dat"
+pr=d.shape_predictor(path)
+# "http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2/content/shape_predictor_68_face_landmarks.dat"
+
+# pr=d.shape_predictor("http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2/content/shape_predictor_68_face_landmarks.dat")
+# pr=http:\\dlib.net\files\shape_predictor_68_face_landmarks.dat.bz2
+sleep=0
+crash=0
+operate=0
+normal=0
+status=""
+value=""
+smile=0
+color=(255,255,255)
+color1=(255,255,255)
+# def smile(x,y):
+#     s=compute(x,y)
+#     print(s)
+    
+
+def compute(ptA,ptB):
+    r=np.linalg.norm(ptA - ptB)
+    return r
+def blinks(a,b,c,d,e,f):
+    up=compute(b,d)+compute(c,e)
+    down=compute(a,f)
+    ra=up/(2*down)
+    if (ra>0.25):
+        return 2
+    elif (ra>0.21 and ra<=0.25):
+        return 1
+    else:
+        return 0
+while True:
+    _,img=i.read()
+    # rgb2=c.cvtColor(img,c.COLOR_BGR2RGB)
+    # en2=fr.face_encodings(rgb2)
+    # re=fr.compare_faces(en1,en2)
+    # print("result :",re)
+    
+    gray=c.cvtColor(img,c.COLOR_BGR2GRAY)
+    faces=detect(gray)
+    for fc in faces:
+        x1=fc.left()
+        x2=fc.right()
+        y1=fc.top()
+        y2=fc.bottom()
+        # facefr=img.copy()
+        c.rectangle(img,(x1,y1),(x2,y2),(0,0,0),2)
+        ls=pr(gray,fc)
+        ls=f.shape_to_np(ls)
+        lb=blinks(ls[36],ls[37],ls[38],ls[41],ls[40],ls[39])
+        rb=blinks(ls[42],ls[43],ls[44],ls[47],ls[46],ls[45])
+        
+        
+        x=compute(ls[49],ls[55])
+        y=compute(ls[51],ls[59])
+        z=compute(ls[53],ls[57])
+        p=x/(y+z)
+        if(p>=0.7 and p<=0.8):
+            smile=smile+1
+            normal=0
+            if(smile>12):
+                value="laughing  :-)"
+                color1=(0,0,255)
+        elif(p>=0.85 and p<=0.89):
+            smile=0
+            normal+=1
+            if(normal>12):
+                value="quiet  "
+                color1=(255,255,0)
+
+
+        
+        # print("x is  ",x)
+        # print("y is  ",y)
+        # print("z is  ",z)
+        # print()
+        
+        if(lb==0 or rb==0):
+            sleep+=1
+            crash=0
+            operate=0
+            if(sleep>6):
+                status="***sleep****"
+                color=(255,0,0)
+        elif(lb==1 or rb==1):
+            sleep=0
+            crash+=1
+            operate=0
+            if(crash>6):
+                status="***crash~~*** "
+                color=(0,255,0)
+        else:
+            sleep=0
+            crash=0
+            operate+=1
+            if(active>6):
+                status="**streaming:-) ***  "
+                color=(0,255,255)
+        c.putText(img,status,(100,100),c.FONT_HERSHEY_TRIPLEX,1.2,color,4)
+        c.putText(img,value,(100,300),c.FONT_HERSHEY_TRIPLEX,1.2,color1,4)
+        s.append([dt.datetime.now(),status,value])
+        for n in range(0,68):
+            (x,y)=ls[n]
+            c.circle(img,(x,y),1,(255,255,255),-1)
+        
+    c.imshow("face ",img)
+    # c.imshow("face detector1",facefr)
+
+    if c.waitKey(1)==ord("q"):
+        break
+i.release()
+w.save("b.xlsx")
+c.destroyAllWindows()                         
